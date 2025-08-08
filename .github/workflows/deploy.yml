@@ -13,15 +13,22 @@ jobs:
         working-directory: qr_code_fe
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+
+      - name: Debug tree
+        run: |
+          pwd
+          ls -la
+          [ -f package.json ] && echo "FE at qr_code_fe" || echo "No FE here"
 
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: 'npm'
-          cache-dependency-path: qr_code_fe/package-lock.json
+          cache-dependency-path: |
+            qr_code_fe/package-lock.json
+            package-lock.json
 
       - name: Create .env.production
         run: |
@@ -32,10 +39,8 @@ jobs:
           VITE_DEFAULT_QR_URL=${{ secrets.VITE_DEFAULT_QR_URL }}
           EOF
 
-      - name: Install & Build
-        run: |
-          npm ci
-          npm run build -- --mode production
+      - run: npm ci
+      - run: npm run build -- --mode production
 
       - name: Upload dist to VPS
         uses: appleboy/scp-action@v0.1.7
