@@ -8,6 +8,10 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
 
+    defaults:
+      run:
+        working-directory: qr_code_fe
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -16,17 +20,40 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
+          cache: 'npm'
+          cache-dependency-path: qr_code_fe/package-lock.json
+
+      - name: Create .env.production
+        run: |
+          cat > .env.production <<'EOF'
+          VITE_API_BASE_URL=${{ secrets.VITE_API_BASE_URL }}
+          VITE_ASSET_URL=${{ secrets.VITE_ASSET_URL }}
+          VITE_QR_BASE=${{ secrets.VITE_QR_BASE }}
+          VITE_DEFAULT_QR_URL=${{ secrets.VITE_DEFAULT_QR_URL }}
+          EOF
 
       - name: Install & Build
         run: |
           npm ci
-          npm run build
+          npm run build -- --mode production
 
-      - name: Upload to VPS
+      - name: Upload dist to VPS
         uses: appleboy/scp-action@v0.1.7
         with:
           host: 31.97.188.40
           username: qrcode-admin
           key: ${{ secrets.SSH_PRIVATE_KEY }}
-          source: "dist/*"
-          target: "/home/qrcode-admin/htdocs/qrcode.goldenwin.vn"
+          source: "qr_code_fe/dist/*"
+          target: "/home/qrcode-admin/htdocs/qrcode.goldenwin.vn/dist"
+          strip_components: 1
+          overwrite: true
+
+      - name: Fix permissions
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: 31.97.188.40
+          username: qrcode-admin
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            find /home/qrcode-admin/htdocs/qrcode.goldenwin.vn/dist -type d -exec chmod 755 {} \;
+            find /home/qrcode-admin/htdocs/qrcode.goldenwin.vn/dist -type f -exec chmod 644 {} \;
