@@ -1,6 +1,6 @@
-const isLocal = ['localhost', '127.0.0.1', 'qrcode.io', 'giang.test'].includes(location.hostname);
+const isLocal = ['localhost', '127.0.0.1', 'info.goldenwin.io', 'qrcode.goldenwin.local'].includes(location.hostname);
 const API_BASE = isLocal
-    ? 'http://api.giang.test/api'
+    ? 'http://api.goldenwin.local/api'
     : 'https://api-qrcode.labit365.com/api';
 
 /**

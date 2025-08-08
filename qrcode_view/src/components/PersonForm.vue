@@ -1,6 +1,5 @@
 <template>
     <div>
-        <!-- Nút quay lại -->
         <a-button type="default" @click="goBack" style="margin-bottom: 16px">
             Quay lại danh sách
         </a-button>

@@ -12,7 +12,7 @@ export default defineConfig({
     ],
     base: '/', // quan trọng để đúng path
     server: {
-        host: 'giang.test',
+        host: 'qrcode.goldenwin.local',
         port: 5173,
     },
     proxy: {

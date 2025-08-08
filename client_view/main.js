@@ -99,10 +99,10 @@ async function renderQRPage() {
     }
 
     const isLocal =
-        ['localhost', '127.0.0.1', 'qrcode.io', 'giang.test'].includes(window.location.hostname);
+        ['localhost', '127.0.0.1', 'info.goldenwin.local', 'qrcode.goldenwin.local'].includes(window.location.hostname);
 
     const API_BASE = isLocal
-        ? 'http://api.giang.test/api'
+        ? 'http://api.goldenwin.local/api'
         : 'https://api-qrcode.labit365.com/api';
 
     console.log('API_BASE', API_BASE)
