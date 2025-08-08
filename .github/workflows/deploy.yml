@@ -48,7 +48,7 @@ jobs:
           host: 31.97.188.40
           username: qrcode-admin
           key: ${{ secrets.SSH_PRIVATE_KEY }}
-          source: "qr_code_fe/dist/*"
+          source: "dist/*"   # <-- CHỈ dist/*
           target: "/home/qrcode-admin/htdocs/qrcode.goldenwin.vn/dist"
           strip_components: 1
           overwrite: true
