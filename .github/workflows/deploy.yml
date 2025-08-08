@@ -10,7 +10,7 @@ jobs:
 
     defaults:
       run:
-        working-directory: ./qr_code/qr_code_fe  # <-- Đường dẫn chuẩn trong repo
+        working-directory: ./qr_code_fe  # <-- Đúng path FE trên GitHub
 
     steps:
       - uses: actions/checkout@v4
@@ -19,15 +19,14 @@ jobs:
         run: |
           pwd
           ls -la
-          ls -la ./qr_code
-          ls -la ./qr_code/qr_code_fe
+          ls -la ./qr_code_fe
 
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: 'npm'
-          cache-dependency-path: ./qr_code/qr_code_fe/package-lock.json
+          cache-dependency-path: ./qr_code_fe/package-lock.json
 
       - name: Create .env.production
         run: |
