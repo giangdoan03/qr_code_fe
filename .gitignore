@@ -1,4 +1,6 @@
+# =========================
 # Logs
+# =========================
 logs
 *.log
 npm-debug.log*
@@ -6,37 +8,45 @@ yarn-debug.log*
 pnpm-debug.log*
 lerna-debug.log*
 
+# =========================
 # Dependency directories
+# =========================
 node_modules/
 
-# Build output
-dist/
-dist-ssr/
+# =========================
+# Build output (chung)
+# =========================
 coverage/
 
+# =========================
 # Local env files
+# =========================
 #.env
 #.env.*.local
 #.env.*       # ← chặn mọi .env.production, .env.development...
 #be/.env.*
-#fe/.env.*
-#fe/.env.production
-fe/.gitignore
 
-
-# Ignore specific files
-fe/vite.config.js
+# =========================
+# Ignore specific files (BE)
+# =========================
 be/public/index.php
 client_view/js/api.js
 client_view/js/template-common.js
+
+# =========================
 # System files
+# =========================
 .DS_Store
 
+# =========================
 # Cypress artifacts
+# =========================
 /cypress/videos/
 /cypress/screenshots/
 
+# =========================
 # Editor configs
+# =========================
 .vscode/*
 !.vscode/extensions.json
 .idea/

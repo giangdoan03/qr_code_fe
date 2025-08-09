@@ -1,0 +1,1 @@
+import{a}from"./index-qam7hN02.js";const t=a.create({baseURL:"https://api.goldenwin.vn/api",withCredentials:!0}),o=(s={})=>t.get("/purchase-history",{params:s}),i=s=>t.post("/purchase-history",s),c=(s,e)=>t.put(`/purchase-history/${s}`,e);export{i as c,o as g,c as u};
