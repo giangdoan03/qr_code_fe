@@ -17,7 +17,7 @@ coverage/
 # Local env files
 .env
 .env.*.local
-.env.*       # ← chặn mọi .env.production, .env.development...
+#.env.*       # ← chặn mọi .env.production, .env.development...
 be/.env.*
 fe/.env.*
 fe/.env.production
