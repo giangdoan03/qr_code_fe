@@ -25,14 +25,6 @@ jobs:
           cache-dependency-path: package-lock.json
 
       # Tạo file .env.production trước khi build
-      - name: Create .env.production
-        run: |
-          cat > .env.production <<'EOF'
-          VITE_API_BASE_URL=${{ secrets.VITE_API_BASE_URL }}
-          VITE_ASSET_URL=${{ secrets.VITE_ASSET_URL }}
-          VITE_QR_BASE=${{ secrets.VITE_QR_BASE }}
-          VITE_DEFAULT_QR_URL=${{ secrets.VITE_DEFAULT_QR_URL }}
-          EOF
 
       - run: npm ci
       - run: npm run build
