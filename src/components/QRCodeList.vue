@@ -269,6 +269,7 @@ const httpOnlyUrl = (url) => {
 
 const buildQrLink = (record) => {
     const baseUrl = import.meta.env.VITE_QR_INFO; // Lấy từ .env
+    console.log('baseUrl', `${baseUrl}/views/${record.target_type}.html?${record.qr_id}`)
     return `${baseUrl}/views/${record.target_type}.html?${record.qr_id}`;
 };
 
@@ -428,13 +429,13 @@ const appendQRCode = (el, record) => {
 const renderAllQRCodes = async () => {
     await nextTick()
 
+    console.log('qrCodes.value', qrCodes.value)
+
     for (const record of qrCodes.value) {
         if (qrImageMap.value[record.qr_id]) continue
 
         try {
-            const config = typeof record.settings_json === 'string'
-                ? JSON.parse(record.settings_json)
-                : record.settings_json
+            const config = typeof record.settings_json === 'string' ? JSON.parse(record.settings_json) : record.settings_json
 
             const qr = new QRCodeStyling({
                 ...config,
@@ -443,7 +444,7 @@ const renderAllQRCodes = async () => {
                 data: record.qr_url
             })
 
-            qrImageMap.value[record.qr_id] = await qr.getRawData('png') // hoặc 'jpeg'
+            qrImageMap.value[record.qr_id] = await qr.getRawData('png')
                 .then(blob => {
                     return new Promise(resolve => {
                         const reader = new FileReader()

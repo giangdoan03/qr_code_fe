@@ -186,7 +186,7 @@ const isEditMode = computed(() => !!route.params.qr_id)
 const downloadFormat = ref('png')
 const requireTarget = ref(false)
 const formComponentRef = ref()
-const QR_BASE_URL = import.meta.env.VITE_QR_BASE
+const QR_BASE_URL = import.meta.env.VITE_QR_INFO
 
 // ✅ Hàm build URL đúng định dạng
 const NO_VIEW_TYPES = ['url', 'sms', 'vcard', 'calendar', 'phone', 'email', 'map', 'wifi', 'custom-url', 'app-store', 'image', 'pdf', 'audio', 'video']
