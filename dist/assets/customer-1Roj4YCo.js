@@ -1,0 +1,1 @@
+import{a as o}from"./index-LmRE4l5i.js";const s=o.create({baseURL:"https://api.goldenwin.vn/api",withCredentials:!0}),r=(t={})=>s.get("/customers",{params:t}),c=t=>s.get(`/customers/${t}`),u=t=>s.post("/customers",t),m=(t,e)=>s.put(`/customers/${t}`,e),n=t=>s.delete(`/customers/${t}`);export{c as a,u as c,n as d,r as g,m as u};
