@@ -273,30 +273,47 @@ const buildQrLink = (record) => {
     return `${baseUrl}/views/${record.target_type}.html?${record.qr_id}`;
 };
 
-const download = (record, format = 'png') => {
-    const qrInstance = qrInstances.value[record.qr_id]
-    if (!qrInstance) {
-        message.error('Không tìm thấy QR để tải')
-        return
+const download = async (record, format = 'png', size = 600) => {
+    try {
+        // Lấy config gốc
+        const cfg = typeof record.settings_json === 'string'
+            ? JSON.parse(record.settings_json || '{}')
+            : (record.settings_json || {});
+
+        // Dữ liệu encode ưu tiên: record.qr_url -> cfg.data -> default
+        const data = httpOnlyUrl(record.qr_url || cfg?.data || defaultQRUrl);
+
+        // Hợp nhất options + scale kích thước tải
+        const options = {
+            ...cfg,
+            data,
+            width: size,
+            height: size,
+            // để tránh lỗi dán logo từ domain khác
+            imageOptions: {
+                ...(cfg.imageOptions || {}),
+                crossOrigin: 'anonymous',
+            },
+        };
+
+        const qr = new QRCodeStyling(options);
+
+        // Xuất blob và tải — ổn định hơn gọi .download() trực tiếp
+        const blob = await qr.getRawData(format); // 'png' | 'jpeg' | 'webp' | 'svg'
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${(record.qr_name || 'qr-code')}.${format}`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+    } catch (e) {
+        console.error(e);
+        message.error('Tải QR thất bại. Kiểm tra cấu hình hoặc CORS của logo.');
     }
+};
 
-    // Clone QR với kích thước lớn hơn để tải (không ảnh hưởng ảnh nhỏ đã render)
-    const config = typeof record.settings_json === 'string'
-        ? JSON.parse(record.settings_json)
-        : record.settings_json
-
-    const largeQR = new QRCodeStyling({
-        ...config,
-        width: 600,
-        height: 600,
-        data: httpOnlyUrl(record.qr_url || config?.data || defaultQRUrl)
-    })
-
-    largeQR.download({
-        name: record.qr_name || 'qr-code',
-        extension: format
-    })
-}
 
 
 const getTargetEditUrl = (record) => {

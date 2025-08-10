@@ -8,13 +8,16 @@
         breakpoint="lg"
         @breakpoint="handleBreakpoint"
         @collapse="handleCollapse"
-        style="background-color: #000000;"
+        style="background-color: #ffffff;"
     >
-        <div class="logo"/>
+        <div class="logo w-[400px] h-[60px] mx-auto">
+            <img style="width: 218px; height: 32px" src="https://assets.goldenwin.vn/wp-content/uploads/2025/08/GdvX1Tm-1-scaled.png" alt="Logo"
+                 class="w-full h-full object-contain" loading="lazy">
+        </div>
         <a-menu
             :selectedKeys="selectedKeys"
             :openKeys="openKeys"
-            theme="dark"
+            theme="light"
             mode="inline"
             @openChange="val => openKeys = val"
             @select="handleSelect"
@@ -247,13 +250,7 @@ const handleCollapse = (collapsed) => {
 }
 </script>
 <style>
-    .ant-menu-dark {
-        background-color: #000000 !important;
-    }
 
-    .ant-menu-sub.ant-menu-inline {
-        background: #000000 !important;
-    }
 </style>
 <style scoped>
     .logo {

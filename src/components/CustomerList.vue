@@ -68,6 +68,18 @@
                     </a-tag>
                   </span>
                 </template>
+
+                <template v-else-if="column.key === 'qr_used'">
+                    <a-tag v-if="!isUnlimited(record)" color="processing" style="margin-left:8px;">
+                        <span>{{ record.qr_used ?? 0 }}</span>
+                    </a-tag>
+                </template>
+
+                <template v-else-if="column.key === 'qr_quota'">
+                    <a-tag v-if="isUnlimited(record)" color="blue">Không giới hạn</a-tag>
+                    <span v-else>{{ record.qr_quota }}</span>
+                </template>
+
                 <template v-else-if="column.key === 'action'">
                     <a-space>
                         <a-tooltip title="Sửa khách hàng">
@@ -100,7 +112,7 @@
                 :open="drawerVisible"
                 :title="isEditing ? 'Sửa khách hàng' : 'Thêm khách hàng'"
                 @close="closeDrawer"
-                width="500"
+                width="700"
         >
             <a-form ref="formRef" layout="vertical" :model="form">
                 <a-form-item label="Tên khách hàng" name="name" :rules="rules.name">
@@ -152,6 +164,28 @@
                     <a-input-password v-model:value="form.confirm_password" />
                 </a-form-item>
 
+                <a-form-item label="Số lượng QR cho phép">
+                    <div style="display:flex;gap:12px;align-items:center">
+                        <!-- Field được collect -->
+                        <a-form-item name="qr_quota" no-style>
+                            <a-input-number
+                                v-model:value="form.qr_quota"
+                                :min="0"
+                                :precision="0"
+                                :disabled="unlimited"
+                                style="width:160px"
+                                placeholder="VD: 50"
+                            />
+                        </a-form-item>
+
+                        <!-- Không collect vào form model -->
+                        <a-form-item-rest>
+                            <a-checkbox v-model:checked="unlimited">Không giới hạn</a-checkbox>
+                        </a-form-item-rest>
+                    </div>
+                </a-form-item>
+
+
                 <a-form-item>
                     <a-button type="primary" block @click="handleSubmit">
                         {{ isEditing ? 'Cập nhật' : 'Tạo mới' }}
@@ -163,7 +197,7 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, watch} from 'vue'
 import { message } from 'ant-design-vue'
 import dayjs from 'dayjs'
 import { useRouter } from 'vue-router'
@@ -183,7 +217,7 @@ import {
     updateCustomer,
     deleteCustomer as deleteCustomerById
 } from '../api/customer'
-
+const unlimited = ref(false);
 const customers = ref([])
 const loading = ref(false)
 const drawerVisible = ref(false)
@@ -192,13 +226,19 @@ const form = ref({
     years: 1,
     product_name: 'Gói Premium',
     is_active: true,
-    is_paid: false // ✅ mặc định là chưa thanh toán
+    is_paid: false, // ✅ mặc định là chưa thanh toán
+    qr_quota: null, // null = không giới hạn
+
 })
 const formRef = ref()
 const changePassword = ref(false)
 let showDrawer = ref(false)
 const filters = ref({ name: '', phone: '', email: '', city: '', dateRange: [] })
 const pagination = ref({ current: 1, pageSize: 10, total: 0 })
+
+// Khi tick "Không giới hạn" → đặt null
+watch(unlimited, v => { if (v) form.qr_quota = null; });
+
 
 
 const packageHistory = ref([])
@@ -220,8 +260,22 @@ const columns = [
     { title: 'Địa chỉ', key: 'address', dataIndex: 'address' },
     { title: 'Tỉnh thành', key: 'city', dataIndex: 'city' },
     { title: 'Trạng thái KH', key: 'customer_status', dataIndex: 'customer_status_text' },
+    // 👇 mới thêm
+    { title: 'QR đã tạo', key: 'qr_used', dataIndex: 'qr_used', align: 'center', width: 110 },
+    { title: 'QR cho phép', key: 'qr_quota', dataIndex: 'qr_quota', align: 'center', width: 130 },
+
     { title: 'Thao tác', key: 'action' },
 ]
+
+const isUnlimited = (row) =>
+    row.qr_quota === null || row.qr_quota === undefined;
+
+const remaining = (row) => {
+    if (isUnlimited(row)) return null;
+    const quota = Number(row.qr_quota) || 0;
+    const used  = Number(row.qr_used)  || 0;
+    return Math.max(0, quota - used);
+};
 
 
 const rules = {
@@ -273,7 +327,22 @@ const rules = {
             },
             trigger: 'blur'
         }
-    ]
+    ],
+    qr_quota: [
+        {
+            validator: (_, v) => {
+                if (unlimited.value) return Promise.resolve();
+                if (v === '' || v === null || v === undefined) {
+                    return Promise.reject('Nhập số lượng hoặc chọn Không giới hạn');
+                }
+                const n = Number(v);
+                return Number.isInteger(n) && n >= 0
+                    ? Promise.resolve()
+                    : Promise.reject('Phải là số nguyên ≥ 0');
+            },
+            trigger: 'change',
+        },
+    ],
 }
 
 const viewDetails = (record) => {
@@ -307,6 +376,7 @@ const fetchCustomers = async () => {
                 package_start_date: latestPackage?.starts_at ?? null,
                 package_end_date: latestPackage?.expires_at ?? null,
                 payment_status: latestPackage?.is_paid === '1' ? 'paid' : 'unpaid',
+                qr_quota: customer.qr_quota,
                 note: latestPackage?.note ?? ''
             }
         })
@@ -351,7 +421,8 @@ const openDrawer = () => {
         address: '',
         customer_status: 2, // ✅ Ngừng hoạt động
         password: '',
-        confirm_password: ''
+        confirm_password: '',
+        qr_quota: ''
     }
     drawerVisible.value = true
 }
@@ -371,7 +442,7 @@ const editCustomer = (record) => {
 
     // Ép kiểu chính xác và debug rõ
     const status = Number(record.status);
-    console.log('🟦 record.status =', record.status, '| typeof =', typeof record.status);
+    console.log('record',record)
 
     form.value = {
         id: record.id,
@@ -381,7 +452,8 @@ const editCustomer = (record) => {
         city: record.city,
         address: record.address,
         customer_status: Number(record.status),
-        package_duration_years: duration
+        package_duration_years: duration,
+        qr_quota: record.qr_quota
     };
 
     changePassword.value = false;
@@ -394,64 +466,83 @@ const closeDrawer = () => {
     drawerVisible.value = false
 }
 
-const handleSubmit = () => {
-    formRef.value
-        .validate()
-        .then(saveCustomer)
-        .catch(() => {
-            message.warning('Vui lòng kiểm tra lại các trường bắt buộc')
-        })
-}
+const mapCustomerStatus = (val) => {
+    switch (val) {
+        case 1: return 'active';
+        case 2: return 'inactive';
+        case 3: return 'vip';
+        default: return 'new';
+    }
+};
+
+// chuẩn hoá chuỗi: '' -> null, trim khoảng trắng
+const clean = (v) => {
+    if (v === undefined || v === null) return null;
+    const s = String(v).trim();
+    return s === '' ? null : s;
+};
+
+// chuẩn hoá quota: null nếu không giới hạn; số nguyên ≥0 nếu có
+const normalizeQuota = () => {
+    if (unlimited.value) return null;
+    const q = form.value.qr_quota;
+    if (q === '' || q === null || q === undefined) return 0;
+    const n = parseInt(q, 10);
+    return Number.isInteger(n) && n >= 0 ? n : 0;
+};
+
+const handleSubmit = async () => {
+    try {
+        await formRef.value.validate();
+        await saveCustomer();
+    } catch (err) {
+        message.warning('Vui lòng kiểm tra lại các trường bắt buộc');
+    }
+};
 
 const saveCustomer = async () => {
+    loading.value = true;
     try {
+        // payload chung
+        const basePayload = {
+            name:   clean(form.value.name),
+            email:  clean(form.value.email),
+            phone:  clean(form.value.phone),
+            city:   clean(form.value.city),
+            address: clean(form.value.address),
+            customer_status: mapCustomerStatus(form.value.customer_status),
+            qr_quota: normalizeQuota(), // ⬅ số lượng QR cho phép
+        };
+
         if (isEditing.value) {
-            // ✳ Gộp dữ liệu cần gửi
-            const payload = {
-                name: form.value.name,
-                email: form.value.email,
-                phone: form.value.phone,
-                city: form.value.city,
-                address: form.value.address,
-                status: form.value.customer_status
-            }
-
-            // ✳ Nếu đang chọn đổi mật khẩu
+            // chỉ gửi password nếu có tick đổi mật khẩu
             if (changePassword.value) {
-                if (form.value.password) {
-                    payload.password = form.value.password
-                }
-                if (form.value.confirm_password) {
-                    payload.confirm_password = form.value.confirm_password
-                }
+                if (clean(form.value.password))         basePayload.password = form.value.password;
+                if (clean(form.value.confirm_password)) basePayload.confirm_password = form.value.confirm_password;
             }
 
-            await updateCustomer(form.value.id, payload)
-            message.success('Cập nhật thành công')
+            await updateCustomer(form.value.id, basePayload);
+            message.success('Cập nhật thành công');
         } else {
-            // ✳ Gửi toàn bộ form khi thêm mới
-            const payload = {
-                name: form.value.name,
-                email: form.value.email,
-                phone: form.value.phone,
-                city: form.value.city,
-                address: form.value.address,
-                status: form.value.customer_status,
-                password: form.value.password,
-                confirm_password: form.value.confirm_password
-            }
-
-            await createCustomer(payload)
-            message.success('Thêm thành công')
+            // tạo mới: cần mật khẩu + xác nhận
+            const createPayload = {
+                ...basePayload,
+                password:         form.value.password,
+                confirm_password: form.value.confirm_password,
+            };
+            await createCustomer(createPayload);
+            message.success('Thêm thành công');
         }
 
-        drawerVisible.value = false
-        await fetchCustomers()
+        drawerVisible.value = false;
+        await fetchCustomers();
     } catch (e) {
-        console.error(e)
-        message.error('Lỗi khi lưu thông tin khách hàng')
+        console.error(e);
+        message.error(e?.message || 'Lỗi khi lưu thông tin khách hàng');
+    } finally {
+        loading.value = false;
     }
-}
+};
 
 
 const deleteCustomer = async (id) => {
