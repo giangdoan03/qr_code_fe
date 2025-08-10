@@ -44,11 +44,12 @@
                 <input
                     type="file"
                     :accept="accept"
-                    @change="onFileChange"
+                    :multiple="props.multiple"
+                    @change="onPick"
                     ref="fileInput"
-                    style="display: none"
+                    style="display:none"
                 />
-                <a href="javascript:void(0)" @click="$refs.fileInput.click()">Thêm</a>
+                <a href="javascript:void(0)" @click="openPicker">Thêm</a>
                 <a @click="openUrlModal" class="add-url-link">Thêm từ URL</a>
             </div>
         </div>
@@ -117,12 +118,31 @@ const props = defineProps({
     hideUploadIfSingle: {
         type: Boolean,
         default: false
-    }
+    },
+    uploader: { type: Function, required: true },
 })
 
 
 
-const emit = defineEmits(['update:modelValue'])
+const emit = defineEmits(['update:modelValue','progress'])
+
+
+const openPicker = () => {
+    fileInput.value?.click()       // mở hộp chọn file khi bấm “Thêm”
+}
+
+const onPick = async (e) => {
+    const files = Array.from(e.target.files || [])
+    e.target.value = ''            // reset để lần sau chọn lại cùng file vẫn bắn change
+
+    // (khuyến nghị) gộp emit một lần để giảm re-render
+    const addedList = []
+    for (let i = 0; i < files.length; i++) {
+        const added = await props.uploader(files[i], { title: files[i].name }, p => emit('progress', { i, p }))
+        addedList.push(added)
+    }
+    emit('update:modelValue', [...props.modelValue, ...addedList])
+}
 
 const internalList = ref([])
 const fileInput = ref(null)

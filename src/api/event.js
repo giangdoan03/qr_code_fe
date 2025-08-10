@@ -5,6 +5,11 @@ const instance = axios.create({
     withCredentials: true, // 👈 Bắt buộc để giữ session
 })
 
+const instance2 = axios.create({
+    baseURL: import.meta.env.VITE_API_BASE_URL_UPLOAD,
+    withCredentials: true, // 👈 Bắt buộc để giữ session
+})
+
 export const getEvents = (params) => instance.get('/events', { params })
 export const getEvent = (id) => instance.get(`/events/${id}`)
 export const createEvent = (data) => instance.post('/events', data)
@@ -14,7 +19,7 @@ export const deleteEvent = (id) => instance.delete(`/events/${id}`)
 export const uploadFile = (file) => {
     const formData = new FormData()
     formData.append('file', file)
-    return instance.post('/upload', formData)
+    return instance2.post('/upload', formData)
 }
 
 export const uploadFromUrl = (url) => {

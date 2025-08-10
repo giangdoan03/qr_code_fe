@@ -12,14 +12,18 @@
                                 :modelValue="form.images"
                                 @update:modelValue="val => form.images = val"
                                 @set-cover="handleSetMainImage"
+                                :uploader="uploadFileToWp"
                             />
                         </a-form-item>
                         <!-- Video sản phẩm -->
-                        <a-form-item label="Video giới thiệu sản phẩm">
+                        <a-form-item label="Video giới thiệu">
                             <ImageUploader
                                 type="video"
-                                :modelValue="normalizeToArray(form.video)"
+                                :accept="'video/*'"
+                                :multiple="false"
+                                :modelValue="form.video"
                                 @update:modelValue="val => form.video = val"
+                                :uploader="uploadFileToWp"
                             />
                         </a-form-item>
 
@@ -311,7 +315,9 @@
 <script setup>
     import {ref, onMounted, computed} from 'vue'
     import {useRoute, useRouter} from 'vue-router'
-    import {nextTick} from 'vue'
+    import {nextTick, reactive } from 'vue'
+    import { uploadMedia } from '@/api/upload' // file mình đã gửi: src/api/upload.js
+
     import {createProduct, getProduct, getProducts, updateProduct} from '../api/product'
 
     import {getBusinesses} from '../api/business'
@@ -406,6 +412,63 @@
         {title: 'Hành động', key: 'action'}
     ]
 
+    // helper uid duy nhất (tránh duplicate keys)
+    const makeUid = () =>
+        (crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(36).slice(2,8)}`)
+
+    /** Uploader dùng chung: trả về object gọn cho UI */
+    const uploadFileToWp = async (file, meta = {}, onProgress) => {
+        const r = await uploadMedia(file, { title: file.name, ...meta }, onProgress)
+        return {
+            id: r.id ?? null,
+            url: r.url,                          // file gốc
+            url_medium: r.url_medium || r.url,   // ảnh preview nếu có
+            mime_type: r.mime_type || file.type,
+            width: r.width ?? null,
+            height: r.height ?? null,
+            title: r.title ?? file.name,
+            alt_text: r.alt_text ?? '',
+            is_main: form.value.images.length === 0, // ảnh đầu tiên -> main
+            uid: makeUid(),                          // dùng làm :key
+        }
+    }
+
+
+    /** tiện ích build payload khi submit */
+    const buildPayload = () => ({
+        ...form.value,
+        avatar: form.value.avatar[0]?.url ?? null,
+        images: form.value.images.map(x => ({ id: x.id, url: x.url, isCover: !!x.isCover })),
+        video: form.value.video.map(x => ({ url: x.url, mime: x.mime_type })),
+        certificate_file: form.value.certificate_file.map(x => ({ url: x.url })),
+    })
+
+    const handleSetMainImage = async (image) => {
+        const eventId = route.params.id;
+
+        // Tạo mảng mới: đúng 1 ảnh is_main = true
+        const updatedImages = form.value.images.map(img => ({
+            ...img,
+            is_main: (image?.id != null ? img.id === image.id : img.url === image.url)
+        }));
+
+        // Payload tối giản chỉ giữ trường cần thiết
+        const payloadImages = updatedImages.map(({ id, url, is_main }) => ({ id, url, is_main }));
+
+        const prev = form.value.images;
+        form.value.images = updatedImages; // optimistic UI
+
+        try {
+            await updateProduct(eventId, { images: payloadImages }); // axios sẽ tự JSON hóa
+            message.success('Đã cập nhật ảnh chính thành công');
+        } catch (err) {
+            console.error(err);
+            form.value.images = prev; // rollback
+            message.error('Không thể cập nhật ảnh chính');
+        }
+    };
+
+
 
     const parseAvatar = (avatar) => {
         if (!avatar) return null
@@ -426,30 +489,7 @@
     }
 
 
-    const handleSetMainImage = async (image) => {
-        try {
-            const eventId = route.params.id
 
-            // Tạo bản sao images và cập nhật is_main
-            const updatedImages = form.value.images.map(img => ({
-                ...img,
-                is_main: img.url === image.url
-            }))
-
-            // Gọi API cập nhật CHỈ trường images
-            await updateProduct(eventId, {
-                images: JSON.stringify(updatedImages)
-            })
-
-            // Cập nhật lại vào form để đồng bộ UI
-            form.value.images = updatedImages
-
-            message.success('Đã cập nhật ảnh chính thành công')
-        } catch (err) {
-            console.error(err)
-            message.error('Không thể cập nhật ảnh chính')
-        }
-    }
 
     const normalizeToArray = (val) => {
         if (Array.isArray(val)) return val
@@ -996,6 +1036,9 @@
     const removeProductLink = (index) => {
         settings.value.productLinks.splice(index, 1)
     }
+
+
+
 
 </script>
 

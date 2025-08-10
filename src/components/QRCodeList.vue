@@ -268,7 +268,7 @@ const httpOnlyUrl = (url) => {
 }
 
 const buildQrLink = (record) => {
-    const baseUrl = import.meta.env.VITE_QR_BASE; // Lấy từ .env
+    const baseUrl = import.meta.env.VITE_QR_INFO; // Lấy từ .env
     return `${baseUrl}/views/${record.target_type}.html?${record.qr_id}`;
 };
 
