@@ -413,8 +413,7 @@
     ]
 
     // helper uid duy nhất (tránh duplicate keys)
-    const makeUid = () =>
-        (crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(36).slice(2,8)}`)
+    const makeUid = () => (crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(36).slice(2,8)}`)
 
     /** Uploader dùng chung: trả về object gọn cho UI */
     const uploadFileToWp = async (file, meta = {}, onProgress) => {
@@ -893,9 +892,9 @@
                 message.success('Thêm sản phẩm thành công 🎉')
                 resetForm()
             }
-            router.push({
+            await router.push({
                 path: '/products',
-                query: { page: currentPage.value }
+                query: {page: currentPage.value}
             })
         } catch (e) {
             message.error('Có lỗi khi lưu sản phẩm 😢')

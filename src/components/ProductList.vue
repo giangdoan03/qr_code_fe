@@ -1,6 +1,14 @@
 <template>
     <div>
         <a-space style="margin-bottom: 16px;">
+            <a-button
+                    type="primary"
+                    danger
+                    :disabled="!selectedRowKeys.length"
+                    @click="confirmDeleteSelected"
+            >
+                Xoá đã chọn ({{ selectedRowKeys.length }})
+            </a-button>
             <a-input
                 v-model:value="search"
                 placeholder="Tìm kiếm sản phẩm..."
@@ -12,14 +20,6 @@
             <a-button type="primary" @click="fetchProducts">Tìm kiếm</a-button>
             <a-button type="primary" @click="goToCreate">Thêm sản phẩm</a-button>
             <a-button type="primary" @click="openImportModal">Import sản phẩm</a-button>
-            <a-button
-                type="primary"
-                danger
-                :disabled="!selectedRowKeys.length"
-                @click="confirmDeleteSelected"
-            >
-                Xoá đã chọn ({{ selectedRowKeys.length }})
-            </a-button>
 
         </a-space>
 
@@ -48,12 +48,35 @@
 
                 <!-- Cột trạng thái -->
                 <template v-if="column.key === 'status'">
-                    <a-switch
-                            :checked="record.status == 1"
-                            @change="checked => toggleStatus(record, checked)"
-                            checked-children="Bật"
-                            un-checked-children="Tắt" />
+                    <template v-if="isAdmin">
+                        <a-switch
+                                :checked="Number(record.status) === 1"
+                                :loading="statusLoading.has(record.id)"
+                                @change="checked => toggleStatus(record, checked)"
+                                checked-children="Đã duyệt"
+                                un-checked-children="Chưa duyệt"
+                        />
+                    </template>
+                    <template v-else>
+                        <template v-if="Number(record.status) === 1">
+                            <a-tag color="green">Đã duyệt</a-tag>
+                        </template>
+
+                        <template v-else>
+                            <a-tooltip
+                                    placement="top"
+                                    title="Sản phẩm chưa được duyệt. Vui lòng liên hệ admin để được hỗ trợ."
+                            >
+                                <a-tag color="gray" class="cursor-help">
+                                    <template #icon><InfoCircleOutlined /></template>
+                                    Chưa duyệt
+                                </a-tag>
+                            </a-tooltip>
+                        </template>
+                    </template>
+
                 </template>
+
 
                 <!-- Cột hành động -->
                 <template v-if="column.key === 'action'">
@@ -105,6 +128,9 @@ import { useRoute, useRouter } from 'vue-router'
 import { getProducts, deleteProduct as apiDeleteProduct, updateProductStatus, importProducts } from '../api/product'
 import { message } from 'ant-design-vue'
 import { formatDate } from '../utils/formUtils'
+import {useUserStore} from "../stores/user";
+import {reactive} from "@vue/reactivity";
+import { InfoCircleOutlined } from '@ant-design/icons-vue'
 
 const router = useRouter()
 const route = useRoute()
@@ -256,13 +282,37 @@ const getAvatarUrl = (images) => {
     return null
 }
 
+const userStore = useUserStore()
+const isAdmin = computed(() => (userStore.user?.role || '').toLowerCase() === 'admin')
+
+// loading theo từng row
+const statusLoading = reactive(new Set())
+
 const toggleStatus = async (record, checked) => {
+    if (!isAdmin.value) {
+        message.warning('Chỉ admin mới được đổi trạng thái')
+        return
+    }
+
+    const id = record.id
+    if (statusLoading.has(id)) return
+    statusLoading.add(id)
+
+    const prev = Number(record.status) === 1
+    const next = checked ? 1 : 0
+
+    // Optimistic UI
+    record.status = next
     try {
-        await updateProductStatus(record.id, { status: checked ? 1 : 0 })
-        record.status = checked ? 1 : 0
-        message.success(`Đã ${checked ? 'bật' : 'tắt'} sản phẩm`)
+        await updateProductStatus(id, { status: next })
+        message.success(next === 1 ? 'Đã duyệt sản phẩm' : 'Đã chuyển về chưa duyệt')
     } catch (e) {
-        message.error('Không thể cập nhật trạng thái')
+        // rollback
+        record.status = prev ? 1 : 0
+        const msg = e?.response?.data?.message || 'Không thể cập nhật trạng thái'
+        message.error(msg)
+    } finally {
+        statusLoading.delete(id)
     }
 }
 
