@@ -129,7 +129,7 @@
         >
             <a-form ref="formRef" layout="vertical" :model="form">
                 <!-- Loại khách hàng -->
-                <a-form-item label="Loại khách hàng">
+                <a-form-item>
                     <a-radio-group v-model:value="customerType" button-style="solid" @change="onTypeChange">
                         <a-radio-button
                                 value="personal"
