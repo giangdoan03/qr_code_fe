@@ -22,7 +22,6 @@
             <a-button type="primary" @click="openImportModal">Import sản phẩm</a-button>
 
         </a-space>
-
         <a-table
             :columns="columns"
             :data-source="products"
@@ -31,6 +30,7 @@
             :loading="loading"
             @change="handleTableChange"
             :row-selection="rowSelection"
+            :scroll="{ x: 1000 }"
         >
             <template #bodyCell="{ column, record }">
                 <!-- Cột ảnh đại diện -->

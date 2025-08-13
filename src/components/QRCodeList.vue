@@ -269,7 +269,6 @@ const httpOnlyUrl = (url) => {
 
 const buildQrLink = (record) => {
     const baseUrl = import.meta.env.VITE_QR_INFO; // Lấy từ .env
-    console.log('baseUrl', `${baseUrl}/views/${record.target_type}.html?${record.qr_id}`)
     return `${baseUrl}/views/${record.target_type}.html?${record.qr_id}`;
 };
 
@@ -445,9 +444,6 @@ const appendQRCode = (el, record) => {
 
 const renderAllQRCodes = async () => {
     await nextTick()
-
-    console.log('qrCodes.value', qrCodes.value)
-
     for (const record of qrCodes.value) {
         if (qrImageMap.value[record.qr_id]) continue
 

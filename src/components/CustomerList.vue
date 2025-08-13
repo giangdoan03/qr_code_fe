@@ -24,12 +24,19 @@
             </a-col>
         </a-row>
 
-        <div style="margin-bottom: 12px; display: flex; justify-content: flex-end">
+        <a-space style="margin-bottom: 16px;">
+            <a-button
+                    danger
+                    :disabled="!selectedRowKeys.length"
+                    @click="confirmBulkDelete"
+            >
+                Xoá đã chọn ({{ selectedRowKeys.length }})
+            </a-button>
             <a-button type="primary" @click="openDrawer">
                 <template #icon><PlusOutlined /></template>
                 Thêm khách hàng
             </a-button>
-        </div>
+        </a-space>
 
         <a-table
                 :columns="columns"
@@ -38,6 +45,8 @@
                 row-key="id"
                 :pagination="pagination"
                 @change="handleTableChange"
+                :scroll="{ x: 1000 }"
+                :row-selection="rowSelection"
         >
             <template #bodyCell="{ column, record, index }">
                 <template v-if="column.key === 'avatar'">
@@ -51,7 +60,11 @@
                         {{ getCustomerStatus(record) }}
                     </a-tag>
                 </template>
-
+                <template v-else-if="column.key === 'customer_type'">
+                    <a-tag :color="record.customer_type === 'business' ? 'purple' : 'green'">
+                        {{ record.customer_type === 'business' ? 'Doanh nghiệp' : 'Cá nhân' }}
+                    </a-tag>
+                </template>
                 <template v-else-if="column.key === 'payment_status'">
                     <a-tag :color="record.payment_status === 'paid' ? 'green' : 'orange'">
                         {{ record.payment_status === 'paid' ? 'Đã thanh toán' : 'Chưa thanh toán' }}
@@ -112,93 +125,146 @@
                 :open="drawerVisible"
                 :title="isEditing ? 'Sửa khách hàng' : 'Thêm khách hàng'"
                 @close="closeDrawer"
-                width="700"
+                width="800"
         >
             <a-form ref="formRef" layout="vertical" :model="form">
-                <a-form-item label="Tên khách hàng" name="name" :rules="rules.name">
-                    <a-input v-model:value="form.name" />
+                <!-- Loại khách hàng -->
+                <a-form-item label="Loại khách hàng">
+                    <a-radio-group v-model:value="customerType" button-style="solid" @change="onTypeChange">
+                        <a-radio-button
+                                value="personal"
+                                :disabled="isEditing && customerType === 'business'"
+                        >
+                            Khách hàng cá nhân
+                        </a-radio-button>
+                        <a-radio-button
+                                value="business"
+                                :disabled="isEditing && customerType === 'personal'"
+                        >
+                            Khách hàng doanh nghiệp
+                        </a-radio-button>
+                    </a-radio-group>
                 </a-form-item>
 
-                <a-form-item label="Email" name="email" :rules="rules.email">
-                    <a-input v-model:value="form.email" />
-                </a-form-item>
+                <!-- Chỉ hiện khi Doanh nghiệp -->
+                <a-row :gutter="[16,16]">
+                    <template v-if="customerType === 'business'">
+                        <a-col :xs="24" :md="12">
+                            <a-form-item label="Tên doanh nghiệp" name="company_name" :rules="rules.company_name">
+                                <a-input v-model:value="form.company_name" />
+                            </a-form-item>
+                        </a-col>
+                        <a-col :xs="24" :md="12">
+                            <a-form-item label="Mã số thuế" name="tax_code" :rules="rules.tax_code">
+                                <a-input v-model:value="form.tax_code" />
+                            </a-form-item>
+                        </a-col>
+                    </template>
+                </a-row>
 
-                <a-form-item label="Số điện thoại" name="phone" :rules="rules.phone">
-                    <a-input v-model:value="form.phone" />
-                </a-form-item>
-
-                <a-form-item label="Tỉnh / Thành phố">
-                    <a-input v-model:value="form.city" />
-                </a-form-item>
-
-                <a-form-item label="Địa chỉ">
-                    <a-input v-model:value="form.address" />
-                </a-form-item>
-
-                <a-form-item label="Trạng thái" name="customer_status" :rules="rules.customer_status">
-                    <a-select v-model:value="form.customer_status" placeholder="Chọn trạng thái">
-                        <a-select-option :value="1">Đang hoạt động</a-select-option>
-                        <a-select-option :value="2">Ngừng hoạt động</a-select-option>
-                        <a-select-option :value="3">VIP</a-select-option>
-                    </a-select>
-                </a-form-item>
-
-
-                <a-form-item v-if="!isEditing" label="Mật khẩu" name="password" :rules="rules.password">
-                    <a-input-password v-model:value="form.password" />
-                </a-form-item>
-
-                <a-form-item v-if="!isEditing" label="Xác nhận mật khẩu" name="confirm_password" :rules="rules.confirm_password">
-                    <a-input-password v-model:value="form.confirm_password" />
-                </a-form-item>
-
-                <a-form-item v-if="isEditing">
-                    <a-checkbox v-model:checked="changePassword">Đổi mật khẩu</a-checkbox>
-                </a-form-item>
-
-                <a-form-item v-if="isEditing && changePassword" label="Mật khẩu mới" name="password" :rules="rules.password">
-                    <a-input-password v-model:value="form.password" />
-                </a-form-item>
-
-                <a-form-item v-if="isEditing && changePassword" label="Xác nhận mật khẩu" name="confirm_password" :rules="rules.confirm_password">
-                    <a-input-password v-model:value="form.confirm_password" />
-                </a-form-item>
-
-                <a-form-item label="Số lượng QR cho phép">
-                    <div style="display:flex;gap:12px;align-items:center">
-                        <!-- Field được collect -->
-                        <a-form-item name="qr_quota" no-style>
-                            <a-input-number
-                                v-model:value="form.qr_quota"
-                                :min="0"
-                                :precision="0"
-                                :disabled="unlimited"
-                                style="width:160px"
-                                placeholder="VD: 50"
-                            />
+                <a-row :gutter="[16,16]">
+                    <a-col :xs="24" :md="12">
+                        <a-form-item :label="nameLabel" name="name" :rules="rules.name">
+                            <a-input v-model:value="form.name" />
                         </a-form-item>
+                    </a-col>
 
-                        <!-- Không collect vào form model -->
-                        <a-form-item-rest>
-                            <a-checkbox v-model:checked="unlimited">Không giới hạn</a-checkbox>
-                        </a-form-item-rest>
-                    </div>
-                </a-form-item>
+                    <a-col :xs="24" :md="12">
+                        <a-form-item label="Email" name="email" :rules="rules.email">
+                            <a-input v-model:value="form.email" />
+                        </a-form-item>
+                    </a-col>
 
+                    <a-col :xs="24" :md="12">
+                        <a-form-item label="Số điện thoại" name="phone" :rules="rules.phone">
+                            <a-input v-model:value="form.phone" />
+                        </a-form-item>
+                    </a-col>
 
-                <a-form-item>
-                    <a-button type="primary" block @click="handleSubmit">
-                        {{ isEditing ? 'Cập nhật' : 'Tạo mới' }}
-                    </a-button>
-                </a-form-item>
+                    <a-col :xs="24" :md="12">
+                        <a-form-item label="Tỉnh / Thành phố" :rules="rules.city">
+                            <a-input v-model:value="form.city" />
+                        </a-form-item>
+                    </a-col>
+
+                    <a-col :xs="24" :md="12">
+                        <a-form-item label="Địa chỉ" :rules="rules.address">
+                            <a-input v-model:value="form.address" />
+                        </a-form-item>
+                    </a-col>
+
+                    <a-col :xs="24" :md="12">
+                        <a-form-item label="Trạng thái" name="customer_status" :rules="rules.customer_status">
+                            <a-select v-model:value="form.customer_status" placeholder="Chọn trạng thái">
+                                <a-select-option :value="1">Đang hoạt động</a-select-option>
+                                <a-select-option :value="2">Ngừng hoạt động</a-select-option>
+                                <a-select-option :value="3">VIP</a-select-option>
+                            </a-select>
+                        </a-form-item>
+                    </a-col>
+
+                    <template v-if="!isEditing">
+                        <a-col :xs="24" :md="12">
+                            <a-form-item label="Mật khẩu" name="password" :rules="rules.password">
+                                <a-input-password v-model:value="form.password" />
+                            </a-form-item>
+                        </a-col>
+                        <a-col :xs="24" :md="12">
+                            <a-form-item label="Xác nhận mật khẩu" name="confirm_password" :rules="rules.confirm_password">
+                                <a-input-password v-model:value="form.confirm_password" />
+                            </a-form-item>
+                        </a-col>
+                    </template>
+
+                    <a-col :span="24" v-if="isEditing">
+                        <a-form-item>
+                            <a-checkbox v-model:checked="changePassword">Đổi mật khẩu</a-checkbox>
+                        </a-form-item>
+                    </a-col>
+
+                    <template v-if="isEditing && changePassword">
+                        <a-col :xs="24" :md="12">
+                            <a-form-item label="Mật khẩu mới" name="password" :rules="rules.password">
+                                <a-input-password v-model:value="form.password" />
+                            </a-form-item>
+                        </a-col>
+                        <a-col :xs="24" :md="12">
+                            <a-form-item label="Xác nhận mật khẩu" name="confirm_password" :rules="rules.confirm_password">
+                                <a-input-password v-model:value="form.confirm_password" />
+                            </a-form-item>
+                        </a-col>
+                    </template>
+
+                    <a-col :span="24">
+                        <a-form-item label="Số lượng QR cho phép">
+                            <div style="display:flex;gap:12px;align-items:center">
+                                <a-form-item name="qr_quota" no-style>
+                                    <a-input-number v-model:value="form.qr_quota" :min="1" :precision="0" :disabled="unlimited" style="width:160px" />
+                                </a-form-item>
+                                <a-form-item-rest>
+                                    <a-checkbox v-model:checked="unlimited">Không giới hạn</a-checkbox>
+                                </a-form-item-rest>
+                            </div>
+                        </a-form-item>
+                    </a-col>
+
+                    <a-col :span="5">
+                        <a-form-item>
+                            <a-button type="primary" block @click="handleSubmit">
+                                {{ isEditing ? 'Cập nhật' : 'Tạo mới' }}
+                            </a-button>
+                        </a-form-item>
+                    </a-col>
+                </a-row>
             </a-form>
+
         </a-drawer>
     </div>
 </template>
 
 <script setup>
 import { ref, computed, watch} from 'vue'
-import { message } from 'ant-design-vue'
+import { Modal, message } from 'ant-design-vue'
 import dayjs from 'dayjs'
 import { useRouter } from 'vue-router'
 const router = useRouter()
@@ -222,12 +288,13 @@ const customers = ref([])
 const loading = ref(false)
 const drawerVisible = ref(false)
 const isEditing = ref(false)
+const customerType = ref('personal')
 const form = ref({
     years: 1,
     product_name: 'Gói Premium',
     is_active: true,
     is_paid: false, // ✅ mặc định là chưa thanh toán
-    qr_quota: null, // null = không giới hạn
+    qr_quota: 1, // null = không giới hạn
 
 })
 const formRef = ref()
@@ -259,11 +326,22 @@ const columns = [
     { title: 'Email', key: 'email', dataIndex: 'email' },
     { title: 'Địa chỉ', key: 'address', dataIndex: 'address' },
     { title: 'Tỉnh thành', key: 'city', dataIndex: 'city' },
+    {
+        title: 'Loại KH',
+        key: 'customer_type',
+        dataIndex: 'customer_type',
+        align: 'center',
+        width: 120,
+        // (tuỳ chọn) lọc nhanh client-side:
+        filters: [
+            { text: 'Cá nhân', value: 'personal' },
+            { text: 'Doanh nghiệp', value: 'business' },
+        ],
+        onFilter: (value, record) => record.customer_type === value,
+    },
     { title: 'Trạng thái KH', key: 'customer_status', dataIndex: 'customer_status_text' },
-    // 👇 mới thêm
-    { title: 'QR đã tạo', key: 'qr_used', dataIndex: 'qr_used', align: 'center', width: 110 },
-    { title: 'QR cho phép', key: 'qr_quota', dataIndex: 'qr_quota', align: 'center', width: 130 },
-
+    { title: 'QR đã tạo', key: 'qr_used', dataIndex: 'qr_used', align: 'center' },
+    { title: 'QR cho phép', key: 'qr_quota', dataIndex: 'qr_quota', align: 'center' },
     { title: 'Thao tác', key: 'action' },
 ]
 
@@ -294,11 +372,18 @@ const rules = {
         }
     ],
     email: [
+        { required: true, message: 'Vui lòng nhập email', trigger: 'blur' },
         {
             type: 'email',
             message: 'Email không hợp lệ',
             trigger: 'blur'
         }
+    ],
+    city: [
+        { required: true, message: 'Vui lòng nhập tỉnh/tp', trigger: 'blur' }
+    ],
+    address: [
+        { required: true, message: 'Vui lòng nhập địa chỉ', trigger: 'blur' }
     ],
     customer_status: [
         { required: true, message: 'Vui lòng chọn trạng thái khách hàng', trigger: 'change' }
@@ -345,6 +430,52 @@ const rules = {
     ],
 }
 
+
+const CUSTOMER_TYPES = { PERSONAL: 'personal', BUSINESS: 'business' }
+
+// đổi nhãn theo loại
+const nameLabel = computed(() =>
+    customerType.value === CUSTOMER_TYPES.BUSINESS ? 'Người liên hệ' : 'Tên khách hàng'
+)
+
+// thêm 2 trường vào model (nhớ merge vào form hiện có của bạn)
+form.company_name = form.company_name ?? ''
+form.tax_code = form.tax_code ?? ''
+// nếu cần gửi lên BE:
+form.customer_type = form.customer_type ?? CUSTOMER_TYPES.PERSONAL
+
+// rules bổ sung (giữ rules cũ của bạn, chỉ thêm 2 cái dưới)
+rules.company_name = [
+    {
+        validator: (_, v) =>
+            customerType.value === CUSTOMER_TYPES.BUSINESS && !v
+                ? Promise.reject('Vui lòng nhập Tên doanh nghiệp')
+                : Promise.resolve(),
+    },
+]
+rules.tax_code = [
+    {
+        validator: (_, v) => {
+            if (customerType.value !== CUSTOMER_TYPES.BUSINESS) return Promise.resolve()
+            if (!v) return Promise.reject('Vui lòng nhập Mã số thuế')
+            return /^\d{10}(\d{3})?$/.test(v)
+                ? Promise.resolve()
+                : Promise.reject('MST chỉ gồm 10 hoặc 13 chữ số')
+        },
+    },
+]
+
+// khi đổi loại, xoá/clear validate các trường DN nếu chuyển sang cá nhân
+const onTypeChange = () => {
+    form.value.customer_type = customerType.value
+    if (customerType.value === 'personal') {
+        // về cá nhân thì clear field DN
+        form.value.company_name = ''
+        form.value.tax_code = ''
+        formRef?.value?.clearValidate?.(['company_name','tax_code'])
+    }
+}
+
 const viewDetails = (record) => {
     router.push(`/customers/${record.id}`)
 }
@@ -359,6 +490,8 @@ const fetchCustomers = async () => {
             phone: filters.value.phone,
             email: filters.value.email,
             city: filters.value.city,
+            company_name: filters.value.company_name,
+            tax_code: filters.value.tax_code,
             from: filters.value.dateRange[0] ? dayjs(filters.value.dateRange[0]).format('YYYY-MM-DD') : undefined,
             to: filters.value.dateRange[1] ? dayjs(filters.value.dateRange[1]).format('YYYY-MM-DD') : undefined
         }
@@ -366,9 +499,9 @@ const fetchCustomers = async () => {
         const res = await getCustomers(params)
         customers.value = res.data.data.map((customer) => {
             const latestPackage = customer.packages?.[0] ?? null
-
             return {
                 ...customer,
+                customer_type: customer.customer_type ?? 'personal',
                 packages: Array.isArray(customer.packages) ? customer.packages : [],
                 status: Number(customer.status),
                 customer_status_text: statusLabel(Number(customer.status)),
@@ -397,9 +530,7 @@ function isExpired(dateString) {
 }
 
 function getCustomerStatus(record) {
-    return record.payment_status === 'paid' && !isExpired(record.package_end_date)
-        ? 'Đang hoạt động'
-        : 'Ngừng hoạt động';
+    return record.payment_status === 'paid' && !isExpired(record.package_end_date) ? 'Đang hoạt động' : 'Ngừng hoạt động';
 }
 
 const getDisplayStatus = (record) => {
@@ -422,7 +553,9 @@ const openDrawer = () => {
         customer_status: 2, // ✅ Ngừng hoạt động
         password: '',
         confirm_password: '',
-        qr_quota: ''
+        qr_quota: 1,
+        company_name: '',
+        tax_code: ''
     }
     drawerVisible.value = true
 }
@@ -439,6 +572,7 @@ const editCustomer = (record) => {
         const diffYears = end.diff(start, 'year');
         duration = diffYears > 0 ? diffYears : undefined;
     }
+    customerType.value = record.customer_type === 'business' ? 'business' : 'personal'
 
     // Ép kiểu chính xác và debug rõ
     const status = Number(record.status);
@@ -453,7 +587,10 @@ const editCustomer = (record) => {
         address: record.address,
         customer_status: Number(record.status),
         package_duration_years: duration,
-        qr_quota: record.qr_quota
+        qr_quota: record.qr_quota,
+        company_name: record.company_name,
+        tax_code: record.tax_code,
+        customer_type: customerType.value,
     };
 
     changePassword.value = false;
@@ -511,7 +648,10 @@ const saveCustomer = async () => {
             city:   clean(form.value.city),
             address: clean(form.value.address),
             customer_status: mapCustomerStatus(form.value.customer_status),
-            qr_quota: normalizeQuota(), // ⬅ số lượng QR cho phép
+            qr_quota: normalizeQuota(),
+            company_name: clean(form.value.company_name),
+            tax_code: clean(form.value.tax_code),
+            customer_type: customerType.value,
         };
 
         if (isEditing.value) {
@@ -553,6 +693,56 @@ const deleteCustomer = async (id) => {
     } catch (e) {
         message.error('Không thể xoá khách hàng')
     }
+}
+
+
+// 2) Cấu hình rowSelection (check all có sẵn ở header)
+const selectedRowKeys = ref([])
+
+const rowSelection = computed(() => ({
+    selectedRowKeys: selectedRowKeys.value,
+    // chọn theo trang và vẫn giữ khi chuyển trang
+    preserveSelectedRowKeys: true,
+    onChange: (keys) => {
+        selectedRowKeys.value = keys
+    }
+}))
+
+
+// 3) Xoá hàng loạt
+const confirmBulkDelete = () => {
+    if (!selectedRowKeys.value.length) return
+    Modal.confirm({
+        title: `Xoá ${selectedRowKeys.value.length} khách hàng?`,
+        content: 'Hành động này không thể hoàn tác.',
+        okText: 'Xoá',
+        okType: 'danger',
+        cancelText: 'Huỷ',
+        async onOk() {
+            loading.value = true
+            try {
+                // Nếu có API xoá hàng loạt, dùng:
+                // await deleteCustomersBulk(selectedRowKeys.value)
+
+                // Không có API bulk: gọi tuần tự/parallel
+                const results = await Promise.allSettled(
+                    selectedRowKeys.value.map((id) => deleteCustomerById(id))
+                )
+                const ok = results.filter(r => r.status === 'fulfilled').length
+                const fail = results.length - ok
+
+                if (ok) message.success(`Đã xoá ${ok} khách hàng`)
+                if (fail) message.warning(`${fail} khách không xoá được`)
+
+                selectedRowKeys.value = []
+                await fetchCustomers()
+            } catch (e) {
+                message.error('Không thể xoá các khách đã chọn')
+            } finally {
+                loading.value = false
+            }
+        },
+    })
 }
 
 const statusLabel = (status) => {
