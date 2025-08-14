@@ -138,7 +138,7 @@
 <script setup>
 import {computed, h, nextTick, ref, watch} from 'vue'
 import {useRoute, useRouter} from 'vue-router'
-import {message} from 'ant-design-vue'
+import {message, Modal} from 'ant-design-vue'
 import {deleteQR, getQRList} from '@/api/qrcode'
 import {CopyOutlined, PlusOutlined} from '@ant-design/icons-vue'
 import QRCodeStyling from 'qr-code-styling'
@@ -168,18 +168,55 @@ const rowSelection = computed(() => ({
     }
 }))
 
-const confirmDeleteSelected = async () => {
+const bulkDeleting = ref(false)
+
+const chunk = (arr, size = 10) => {
+    const out = []
+    for (let i = 0; i < arr.length; i += size) out.push(arr.slice(i, i + size))
+    return out
+}
+
+const confirmDeleteSelected = () => {
     if (!selectedRowKeys.value.length) return
 
-    try {
-        await Promise.all(selectedRowKeys.value.map(id => deleteQR(id)))
-        message.success(`Đã xoá ${selectedRowKeys.value.length} mã QR`)
-        selectedRowKeys.value = []
-        await fetchQRCodes()
-        await renderAllQRCodes()
-    } catch (err) {
-        message.error('Lỗi khi xoá hàng loạt')
-    }
+    Modal.confirm({
+        title: `Xoá ${selectedRowKeys.value.length} mã QR?`,
+        content: 'Hành động này không thể hoàn tác.',
+        okText: 'Xoá',
+        okType: 'danger',
+        cancelText: 'Huỷ',
+        async onOk() {
+            bulkDeleting.value = true
+            try {
+                const ids = selectedRowKeys.value.slice() // copy
+                let ok = 0, fail = 0
+                const failedIds = []
+
+                // Xoá theo batch 10 để tránh quá nhiều request cùng lúc
+                for (const group of chunk(ids, 10)) {
+                    const results = await Promise.allSettled(group.map(id => deleteQR(id)))
+                    ok   += results.filter(r => r.status === 'fulfilled').length
+                    const failed = results
+                        .map((r, i) => ({ r, id: group[i] }))
+                        .filter(x => x.r.status === 'rejected')
+                    fail += failed.length
+                    failedIds.push(...failed.map(x => x.id))
+                }
+
+                if (ok)   message.success(`Đã xoá ${ok} mã QR`)
+                if (fail) message.warning(`Không xoá được ${fail} mã: ${failedIds.join(', ')}`)
+
+                selectedRowKeys.value = []
+                await fetchQRCodes()
+                await renderAllQRCodes?.()  // nếu có
+            } catch (err) {
+                console.error(err)
+                message.error('Lỗi khi xoá hàng loạt')
+            } finally {
+                bulkDeleting.value = false
+            }
+        }
+    })
 }
 
 
