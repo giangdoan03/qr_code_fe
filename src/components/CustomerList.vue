@@ -1,6 +1,6 @@
 <template>
     <div>
-        <a-page-header title="Quản lý khách hàng" style="padding-left: 0"/>
+        <a-page-header title="Quản lý khách hàng" style="padding-left: 0; padding-top: 0"/>
 
         <!-- Bộ lọc -->
         <a-row :gutter="[16, 16]" style="margin-bottom: 16px;">
@@ -375,7 +375,7 @@ const columns = [
     { title: 'Trạng thái KH', key: 'customer_status', dataIndex: 'customer_status_text', width: 180, className: 'no-wrap', ellipsis: true },
     { title: 'QR đã tạo', key: 'qr_used', dataIndex: 'qr_used', align: 'center', width: 150, className: 'no-wrap', ellipsis: true },
     { title: 'QR cho phép', key: 'qr_quota', dataIndex: 'qr_quota', align: 'center', width: 150, className: 'no-wrap', ellipsis: true },
-    { title: 'Thao tác', key: 'action' , width: 150, className: 'no-wrap', ellipsis: true},
+    { title: 'Thao tác', key: 'action' , width: 150, fixed: 'right', className: 'no-wrap', ellipsis: true},
 ]
 
 const isUnlimited = (row) =>
