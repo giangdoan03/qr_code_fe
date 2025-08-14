@@ -354,7 +354,7 @@ const currentPackage = computed(() => {
 const columns = [
     { title: 'STT', key: 'stt',width: 80, className: 'no-wrap', ellipsis: true },
     { title: 'Tên doanh nghiệp', key: 'company_name', dataIndex: 'company_name', width: 260, className: 'no-wrap', ellipsis: true },
-    { title: 'Tên khách hàng', key: 'name', dataIndex: 'name', width: 150, className: 'no-wrap', ellipsis: true },
+    { title: 'Người liên hệ', key: 'name', dataIndex: 'name', width: 150, className: 'no-wrap', ellipsis: true },
     { title: 'Số điện thoại', key: 'phone', dataIndex: 'phone', width: 150, className: 'no-wrap', ellipsis: true },
     { title: 'Email', key: 'email', dataIndex: 'email', width: 260, className: 'no-wrap', ellipsis: true },
     { title: 'Địa chỉ', key: 'address', dataIndex: 'address', width: 260, className: 'no-wrap', ellipsis: true },
