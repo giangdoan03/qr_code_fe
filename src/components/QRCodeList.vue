@@ -54,6 +54,7 @@
                 onChange: onPageChange
             }"
             :row-selection="rowSelection"
+            :scroll="{ x: 1200 }"
         >
             <template #bodyCell="{ column, record }">
                 <template v-if="column.key === 'qr'">
