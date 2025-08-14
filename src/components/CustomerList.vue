@@ -39,6 +39,7 @@
         </a-space>
 
         <a-table
+            class="tiny-scroll"
                 :columns="columns"
                 :data-source="customers"
                 :loading="loading"
@@ -51,6 +52,25 @@
             <template #bodyCell="{ column, record, index }">
                 <template v-if="column.key === 'avatar'">
                     <img v-if="record && record.avatar" :src="record.avatar" />
+                </template>
+                <template v-else-if="column.key === 'company_name'">
+                    <!-- Nếu là doanh nghiệp: hiện tên + tooltip -->
+                    <template v-if="record.customer_type === 'business'">
+                        <a-tooltip
+                            v-if="record.company_name"
+                            :title="record.company_name"
+                            placement="topLeft"
+                            :overlayStyle="{ maxWidth: '480px', whiteSpace: 'normal' }"
+                        >
+                            <span class="cell-ellipsis">{{ record.company_name }}</span>
+                        </a-tooltip>
+                        <span v-else>—</span>
+                    </template>
+
+                    <!-- Nếu là cá nhân: hiện tag loại KH -->
+                    <a-tag v-else :color="record.customer_type === 'business' ? 'purple' : 'green'">
+                        {{ record.customer_type === 'business' ? 'Doanh nghiệp' : 'Cá nhân' }}
+                    </a-tag>
                 </template>
                 <template v-else-if="column.key === 'stt'">
                     {{ ((pagination?.current || 1) - 1) * (pagination?.pageSize || 10) + index + 1 }}
@@ -80,6 +100,18 @@
                       Hết hạn
                     </a-tag>
                   </span>
+                </template>
+
+                <template v-else-if="column.key === 'address'">
+                    <a-tooltip
+                        v-if="record.address"
+                        :title="record.address"
+                        placement="topLeft"
+                        :overlayStyle="{ maxWidth: '480px', whiteSpace: 'normal' }"
+                    >
+                        <span class="cell-ellipsis">{{ record.address }}</span>
+                    </a-tooltip>
+                    <span v-else>—</span>
                 </template>
 
                 <template v-else-if="column.key === 'qr_used'">
@@ -320,18 +352,19 @@ const currentPackage = computed(() => {
 })
 
 const columns = [
-    { title: 'STT', key: 'stt' },
-    { title: 'Tên khách hàng', key: 'name', dataIndex: 'name' },
-    { title: 'Số điện thoại', key: 'phone', dataIndex: 'phone' },
-    { title: 'Email', key: 'email', dataIndex: 'email' },
-    { title: 'Địa chỉ', key: 'address', dataIndex: 'address' },
-    { title: 'Tỉnh thành', key: 'city', dataIndex: 'city' },
+    { title: 'STT', key: 'stt',width: 80, className: 'no-wrap', ellipsis: true },
+    { title: 'Tên doanh nghiệp', key: 'company_name', dataIndex: 'company_name', width: 260, className: 'no-wrap', ellipsis: true },
+    { title: 'Tên khách hàng', key: 'name', dataIndex: 'name', width: 150, className: 'no-wrap', ellipsis: true },
+    { title: 'Số điện thoại', key: 'phone', dataIndex: 'phone', width: 150, className: 'no-wrap', ellipsis: true },
+    { title: 'Email', key: 'email', dataIndex: 'email', width: 260, className: 'no-wrap', ellipsis: true },
+    { title: 'Địa chỉ', key: 'address', dataIndex: 'address', width: 260, className: 'no-wrap', ellipsis: true },
+    { title: 'Tỉnh thành', key: 'city', dataIndex: 'city', width: 150, className: 'no-wrap', ellipsis: true },
     {
         title: 'Loại KH',
         key: 'customer_type',
         dataIndex: 'customer_type',
         align: 'center',
-        width: 120,
+        width: 150, className: 'no-wrap', ellipsis: true,
         // (tuỳ chọn) lọc nhanh client-side:
         filters: [
             { text: 'Cá nhân', value: 'personal' },
@@ -339,10 +372,10 @@ const columns = [
         ],
         onFilter: (value, record) => record.customer_type === value,
     },
-    { title: 'Trạng thái KH', key: 'customer_status', dataIndex: 'customer_status_text' },
-    { title: 'QR đã tạo', key: 'qr_used', dataIndex: 'qr_used', align: 'center' },
-    { title: 'QR cho phép', key: 'qr_quota', dataIndex: 'qr_quota', align: 'center' },
-    { title: 'Thao tác', key: 'action' },
+    { title: 'Trạng thái KH', key: 'customer_status', dataIndex: 'customer_status_text', width: 180, className: 'no-wrap', ellipsis: true },
+    { title: 'QR đã tạo', key: 'qr_used', dataIndex: 'qr_used', align: 'center', width: 150, className: 'no-wrap', ellipsis: true },
+    { title: 'QR cho phép', key: 'qr_quota', dataIndex: 'qr_quota', align: 'center', width: 150, className: 'no-wrap', ellipsis: true },
+    { title: 'Thao tác', key: 'action' , width: 150, className: 'no-wrap', ellipsis: true},
 ]
 
 const isUnlimited = (row) =>
@@ -764,3 +797,45 @@ const handleTableChange = (pager) => {
 }
 fetchCustomers()
 </script>
+
+<style scoped>
+/* nếu <style scoped> thì dùng :deep */
+:deep(.ant-table-thead th.no-wrap),
+:deep(.ant-table-tbody td.no-wrap) {
+    white-space: nowrap;         /* không cho xuống dòng */
+    overflow: hidden;            /* ẩn phần tràn */
+    text-overflow: ellipsis;     /* hiện … */
+    word-break: normal;          /* không bẻ chữ giữa chừng */
+    overflow-wrap: normal;
+}
+
+
+</style>
+<style>
+/* Firefox */
+.tiny-scroll .ant-table-body,
+.tiny-scroll .ant-table-content,
+.tiny-scroll .ant-table-header {
+    scrollbar-width: thin;                         /* mảnh hơn */
+    scrollbar-color: rgba(0,0,0,.35) transparent;  /* màu tay kéo */
+}
+
+/* Chrome/Edge/Safari */
+.tiny-scroll .ant-table-body::-webkit-scrollbar,
+.tiny-scroll .ant-table-content::-webkit-scrollbar,
+.tiny-scroll .ant-table-header::-webkit-scrollbar {
+    width: 6px;   /* dọc */
+    height: 6px;  /* ngang – chỉnh xuống 4px nếu muốn nhỏ nữa */
+}
+.tiny-scroll .ant-table-body::-webkit-scrollbar-thumb,
+.tiny-scroll .ant-table-content::-webkit-scrollbar-thumb,
+.tiny-scroll .ant-table-header::-webkit-scrollbar-thumb {
+    background: rgba(0,0,0,.35);
+    border-radius: 6px;
+}
+.tiny-scroll .ant-table-body::-webkit-scrollbar-track,
+.tiny-scroll .ant-table-content::-webkit-scrollbar-track,
+.tiny-scroll .ant-table-header::-webkit-scrollbar-track {
+    background: transparent;
+}
+</style>

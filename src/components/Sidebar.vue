@@ -4,15 +4,23 @@
         :trigger="null"
         collapsible
         collapsedWidth="0"
-        width="250"
+        width="200"
         breakpoint="lg"
         @breakpoint="handleBreakpoint"
         @collapse="handleCollapse"
         style="background-color: #ffffff;"
     >
         <div class="logo w-[400px] h-[60px] mx-auto">
-            <img style="width: 218px; height: 32px" src="https://assets.goldenwin.vn/wp-content/uploads/2025/08/GdvX1Tm-1-scaled.png" alt="Logo"
-                 class="w-full h-full object-contain" loading="lazy">
+            <a href="https://goldenwin.vn/" target="_blank" rel="noopener">
+                <img
+                    style="width:180px;height:32px;object-fit:contain;"
+                    src="https://assets.goldenwin.vn/wp-content/uploads/2025/08/GdvX1Tm-1-scaled.png"
+                    alt="Logo"
+                    class="w-full h-full object-contain"
+                    loading="lazy"
+                >
+            </a>
+
         </div>
         <a-menu
             :selectedKeys="selectedKeys"
@@ -29,10 +37,9 @@
 
             <a-sub-menu key="quan-ly-doi-tuong">
                 <template #title>
-                      <span>
-                        <AppstoreOutlined/>
-                        <span>Quản lý đối tượng</span>
-                      </span>
+                    <a-tooltip :title="tips['quan-ly-doi-tuong']" placement="right">
+                        <span><AppstoreOutlined/><span>QL đối tượng</span></span>
+                    </a-tooltip>
                 </template>
 
                 <a-menu-item key="san-pham">
@@ -211,6 +218,11 @@ const keyToParentMap = {
     'quan-ly-user': 'dashboard',
     'phan-quyen': 'dashboard',
 
+}
+
+const tips = {
+    dashboard: 'Tổng quan hệ thống',
+    'quan-ly-doi-tuong': 'Quản lý đối tượng',
 }
 
 
