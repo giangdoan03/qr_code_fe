@@ -352,7 +352,7 @@ const columns = [
         key: 'updated_at',
         customRender: ({ text }) => text ? formatDate(text) : 'N/A'
     },
-    { title: 'Trạng thái', dataIndex: 'status', key: 'status' },
+    { title: 'Trạng thái', dataIndex: 'status', key: 'status', width: 150 },
     { title: 'Hành động', key: 'action' }
 ]
 
