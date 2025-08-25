@@ -372,7 +372,7 @@ const columns = [
         ],
         onFilter: (value, record) => record.customer_type === value,
     },
-    { title: 'Trạng thái KH', key: 'customer_status', dataIndex: 'customer_status_text', width: 180, className: 'no-wrap', ellipsis: true },
+    // { title: 'Trạng thái KH', key: 'customer_status', dataIndex: 'customer_status_text', width: 180, className: 'no-wrap', ellipsis: true },
     { title: 'QR đã tạo', key: 'qr_used', dataIndex: 'qr_used', align: 'center', width: 150, className: 'no-wrap', ellipsis: true },
     { title: 'QR cho phép', key: 'qr_quota', dataIndex: 'qr_quota', align: 'center', width: 150, className: 'no-wrap', ellipsis: true },
     { title: 'Thao tác', key: 'action' , width: 150, fixed: 'right', className: 'no-wrap', ellipsis: true},
